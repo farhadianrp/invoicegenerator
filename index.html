@@ -13,10 +13,10 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --blue: #1B4FD8;
-    --blue-dark: #1340B0;
-    --blue-light: #EEF2FF;
-    --blue-mid: #C7D2FE;
+    --blue: #3800D1;
+    --blue-dark: #290099;
+    --blue-light: #F0EBFF;
+    --blue-mid: #C2ADFF;
     --black: #0A0A0A;
     --gray-900: #111827;
     --gray-700: #374151;
@@ -64,7 +64,7 @@
     transition: all .18s ease; line-height: 1;
   }
   .btn-primary { background: var(--blue); color: #fff; }
-  .btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(27,79,216,.35); }
+  .btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(56, 0, 209, 0.35); }
   .btn-outline { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-300); }
   .btn-outline:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
   .btn-sm { padding: 7px 14px; font-size: 12.5px; }
@@ -100,7 +100,7 @@
     color: var(--gray-900); background: var(--gray-50);
     transition: border .15s, box-shadow .15s; outline: none;
   }
-  .field input:focus { border-color: var(--blue); background: #fff; box-shadow: 0 0 0 3px rgba(27,79,216,.12); }
+  .field input:focus { border-color: var(--blue); background: #fff; box-shadow: 0 0 0 3px rgba(56, 0, 209, 0.12); }
   .field input[readonly] { background: var(--gray-100); color: var(--gray-500); cursor: default; }
 
   .action-btns { display: flex; flex-direction: column; gap: 10px; }
@@ -135,20 +135,17 @@
     margin-bottom: 40px; padding-bottom: 32px;
     border-bottom: 2px solid var(--blue);
   }
-  .inv-logo-area { display: flex; align-items: center; gap: 14px; }
-  .inv-logo-box {
-    height: 52px; width: auto; max-width: 200px;
-    object-fit: contain; flex-shrink: 0;
+  .inv-logo-area { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .inv-logo-img { 
+    height: 35px; 
+    width: auto; 
+    max-width: 300px;
+    object-fit: contain; 
+    mix-blend-mode: multiply; /* Trik agar JPG putih transparan */
   }
-  .inv-logo-box2{
-    width: 52px; height: 52px; background: var(--blue); border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Inter', sans-serif; font-weight: 700;
-    font-size: 18px; color: #fff; letter-spacing: -.5px; flex-shrink: 0;
-  }
-  .inv-brand-name { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 700; color: var(--gray-900); line-height: 1.1; }
-  .inv-brand-tagline { font-size: 11px; color: var(--gray-500); margin-top: 3px; font-weight: 400; }
+  .inv-brand-tagline { font-size: 11px; color: var(--gray-500); margin-top: 2px; font-weight: 400; }
   .inv-brand-tagline2 { font-size: 11px; color: var(--gray-500); margin-top: 3px; font-weight: 400; letter-spacing:.04em; }
+  
   .inv-title-block { text-align: right; }
   .inv-title { font-family: 'Inter', sans-serif; font-size: 36px; font-weight: 800; color: var(--blue); letter-spacing: -1.5px; line-height: 1; }
   .inv-number { font-size: 12px; color: var(--gray-500); margin-top: 6px; font-weight: 500; letter-spacing: .04em; }
@@ -292,7 +289,7 @@
 <body>
 
 <header class="app-header">
-  <div class="app-title">Invoice <span>Generator</span></br>
+  <div class="app-title">Invoice <span>Generator</span><br>
   <div class="inv-brand-tagline2">by Swandika Studio</div></div>
   <div style="display:flex;gap:10px;">
     <button class="btn btn-outline btn-sm" onclick="resetInvoice()">
@@ -360,11 +357,8 @@
 
       <div class="inv-header">
         <div class="inv-logo-area">
-          <div class="inv-logo-box2">SS</div>
-          <div>
-            <div class="inv-brand-name">Swandika Studio</div>
-            <div class="inv-brand-tagline">Creative &amp; Digital Agency</div>
-          </div>
+          <img src="https://raw.githubusercontent.com/farhadianrp/invoicegenerator/refs/heads/main/swandika%20web%20fix.png" alt="Swandika Studio" class="inv-logo-img" crossorigin="anonymous" />
+          <div class="inv-brand-tagline">Creative &amp; Digital Agency</div>
         </div>
         <div class="inv-title-block">
           <div class="inv-title">INVOICE</div>
@@ -460,7 +454,10 @@
           </ul>
         </div>
         <div class="footer-right-col">
-          
+          <div>
+            <div class="inv-section-label">Thank You</div>
+            <div class="inv-section-text">Thank you for trusting Swandika Studio with your project. It's been a pleasure working with you. We look forward to collaborating again soon.</div>
+          </div>
           <div>
             <div class="inv-section-label">Payment Method</div>
             <div class="inv-section-text">
@@ -470,10 +467,6 @@
               <strong>PayPal</strong><br>
               farhadianrp@gmail.com
             </div>
-          </div>
-		  <div>
-            <div class="inv-section-label">Thank You</div>
-            <div class="inv-section-text">Thank you for trusting Swandika Studio with your project. It's been a pleasure working with you. We look forward to collaborating again soon.</div>
           </div>
         </div>
       </div>
@@ -502,14 +495,16 @@
     document.getElementById('invoiceNum').value   = invNum;
     document.getElementById('invoiceDate').value  = dateStr(today);
     document.getElementById('dueDate').value      = dateStr(tomorrow);
+    
+    // Sync langsung saat inisialisasi agar nilai muncul
     document.getElementById('prev-invnum').textContent  = invNum;
     document.getElementById('prev-invnum2').textContent = invNum;
     document.getElementById('prev-invDate').textContent = dateStr(today);
     document.getElementById('prev-dueDate').textContent = dateStr(tomorrow);
     document.getElementById('prev-dueDate2').textContent= dateStr(tomorrow);
 
+    updatePreview();
     calcTotals();
-    updateFilenameHint();
   }
 
   // ── CREATE ROW DOM ──
@@ -623,6 +618,7 @@
     const contact = document.getElementById('clientContact').value || '—';
     document.getElementById('prev-clientName').textContent    = name;
     document.getElementById('prev-clientContact').textContent = contact;
+
     updateFilenameHint();
   }
 
@@ -654,6 +650,10 @@
     noPrint.forEach(el => el.style.setProperty('display','none','important'));
 
     const el = document.getElementById('invoice-preview');
+    const logoImg = el.querySelector('.inv-logo-img');
+
+    // Matikan mix-blend-mode sementara saat generate PDF untuk mencegah gambar tembus
+    if (logoImg) logoImg.style.mixBlendMode = 'normal';
 
     // Trik swap div statis untuk menangani bug text-clipping html2canvas
     const inputs = el.querySelectorAll('.item-input');
@@ -675,7 +675,7 @@
     try {
       const canvas = await html2canvas(el, {
         scale: 2,
-        useCORS: true,
+        useCORS: true, // WAJIB TRUE untuk render gambar url dummy
         backgroundColor: '#ffffff',
         logging: false
       });
@@ -697,6 +697,7 @@
       alert('Gagal export PDF: ' + err.message);
     } finally {
       noPrint.forEach(el => el.style.removeProperty('display'));
+      if (logoImg) logoImg.style.mixBlendMode = 'multiply'; // Kembalikan efek setelah PDF dirender
       
       const tempDivs = el.querySelectorAll('div[data-pdf-temp="true"]');
       tempDivs.forEach(div => {
@@ -720,9 +721,8 @@
     document.getElementById('discPercent').value  = '0';
     document.getElementById('invoiceNote').value   = '';
     document.getElementById('invoiceNote').style.height = 'auto';
-    document.getElementById('prev-clientName').textContent   = '—';
-    document.getElementById('prev-clientContact').textContent= '—';
-    addItem(); calcTotals(); updatePreview();
+    init(); // Panggil ulang init agar tanggal & ID kembali fresh
+    addItem(); 
   }
 
   init();
