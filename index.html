@@ -277,12 +277,68 @@
   .col-sub   { width: 19%; }
   .col-act   { width: 6%; }
 
+  /* ==========================================================================
+     RESPONSIVE BREAKPOINTS 
+     ========================================================================== */
+
+  /* Tablet & iPad Portrait */
   @media (max-width: 820px) {
-    .editor-wrap { grid-template-columns: 1fr; }
-    .sidebar { position: static; }
+    /* 1. Ubah display menjadi flex untuk memanipulasi urutan */
+    .editor-wrap { 
+      display: flex; 
+      flex-direction: column; 
+    }
+    
+    /* 2. Pindahkan kertas Invoice ke urutan pertama (paling atas) */
+    .invoice-shell {
+      order: 1;
+      width: 100%;
+      margin-bottom: 24px; /* Tambahkan jarak antara kertas invoice dan form di bawahnya */
+    }
+
+    /* 3. Pindahkan Sidebar (Form) ke urutan kedua (bawah) */
+    .sidebar { 
+      order: 2;
+      position: static; 
+      width: 100%;
+    }
+
+    /* Penyesuaian layout mobile yang sudah ada sebelumnya */
     .inv-totals { flex-direction: column; align-items: stretch; gap: 24px; }
     .inv-editable-note { max-width: 100%; }
     .inv-footer { grid-template-columns: 1fr; }
+  }
+
+  /* Large Mobile & Tablet */
+  @media (max-width: 768px) {
+    /* Sesuaikan padding invoice agar tidak sesak di layar kecil */
+    #invoice-preview { padding: 32px 24px 24px; }
+    
+    /* Ubah grid meta menjadi vertikal */
+    .inv-meta { grid-template-columns: 1fr; gap: 24px; }
+
+    /* Bungkus tabel dengan overflow agar bisa di-scroll horizontal tanpa merusak layout */
+    .inv-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
+    .inv-table { min-width: 600px; }
+
+    /* Total Section memenuhi lebar */
+    .inv-totals-table { width: 100%; }
+  }
+
+  /* Small Mobile */
+  @media (max-width: 576px) {
+    /* App Header */
+    .app-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    
+    /* Invoice Header - Dibuat agar tetap sejajar (kiri & kanan) */
+    .inv-header { flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .inv-title-block { text-align: right; }
+    .inv-title { font-size: 26px; } /* Ukuran font diperkecil sedikit agar teks tidak menabrak logo di layar HP */
+    .inv-logo-img { max-width: 140px; } /* Batas lebar logo menyesuaikan sisa ruang */
+    
+    /* Balance Banner */
+    .inv-balance-banner { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .inv-due-info { text-align: left; }
   }
 </style>
 </head>
