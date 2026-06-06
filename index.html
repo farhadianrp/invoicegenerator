@@ -139,7 +139,7 @@
   .inv-logo-box {
     height: 52px; width: auto; max-width: 200px;
     object-fit: contain; flex-shrink: 0;
-	}
+  }
   .inv-logo-box2{
     width: 52px; height: 52px; background: var(--blue); border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -172,7 +172,6 @@
     padding: 11px 14px; text-align: left;
     font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
     text-transform: uppercase; color: #fff;
-
   }
   .inv-table thead th.col-qty,
   .inv-table thead th.col-price { text-align: center; }
@@ -182,7 +181,6 @@
   .inv-table tbody tr:hover { background: var(--gray-50); }
   .inv-table tbody td {
     padding: 10px 14px; vertical-align: top;
-
   }
   .inv-table tbody td.col-qty { text-align: center; vertical-align: middle; }
   .inv-table tbody td.col-price { text-align: center; vertical-align: middle; }
@@ -235,9 +233,10 @@
   }
   .row-del-btn:hover { color: var(--red); background: #FEF2F2; }
 
-  /* Totals */
-  .inv-totals { display: flex; justify-content: flex-end; margin-bottom: 40px; }
-  .inv-totals-table { width: 300px; }
+  /* Totals & Notes Section */
+  .inv-totals { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; gap: 24px; }
+  .inv-editable-note { flex-grow: 1; max-width: 50%; text-align: left; }
+  .inv-totals-table { width: 300px; flex-shrink: 0; }
   .totals-row {
     display: flex; justify-content: space-between;
     padding: 7px 0; font-size: 13px; border-bottom: 1px solid var(--gray-100);
@@ -264,12 +263,15 @@
   .inv-due-label { font-size: 11px; color: rgba(255,255,255,.6); }
   .inv-due-date { font-size: 15px; font-weight: 600; color: #fff; }
 
-  /* Footer */
-  .inv-footer { border-top: 1px solid var(--gray-200); padding-top: 28px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
-  .inv-footer-label { font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
-  .inv-footer-text { font-size: 11.5px; color: var(--gray-500); line-height: 1.7; font-weight: 400; }
-  .inv-footer-text strong { color: var(--gray-700); font-weight: 600; }
-  .inv-footer-text li { margin-left: 14px; margin-bottom: 4px; }
+  /* Shared Label & Text */
+  .inv-section-label { font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
+  .inv-section-text { font-size: 11.5px; color: var(--gray-500); line-height: 1.7; font-weight: 400; }
+  .inv-section-text strong { color: var(--gray-700); font-weight: 600; }
+  .inv-section-text li { margin-left: 14px; margin-bottom: 4px; }
+
+  /* Footer Layout */
+  .inv-footer { border-top: 1px solid var(--gray-200); padding-top: 28px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
+  .footer-right-col { display: flex; flex-direction: column; gap: 24px; }
 
   /* Column widths */
   .col-desc  { width: 42%; }
@@ -281,6 +283,9 @@
   @media (max-width: 820px) {
     .editor-wrap { grid-template-columns: 1fr; }
     .sidebar { position: static; }
+    .inv-totals { flex-direction: column; align-items: stretch; gap: 24px; }
+    .inv-editable-note { max-width: 100%; }
+    .inv-footer { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -355,7 +360,6 @@
 
       <div class="inv-header">
         <div class="inv-logo-area">
-  
           <div class="inv-logo-box2">SS</div>
           <div>
             <div class="inv-brand-name">Swandika Studio</div>
@@ -376,10 +380,9 @@
           <div style="margin-top:20px;">
             <div class="inv-meta-label">From</div>
             <div class="inv-brand-contact">
-            
               Surabaya, Jawa Timur, Indonesia<br>
-              hello@swandika.com · +62 851 5745 7070<br>
-              www.swandika.com
+              halo@swandikastudio.com · +62 851 5745 7070<br>
+              www.swandikastudio.com
             </div>
           </div>
         </div>
@@ -430,6 +433,11 @@
       </div>
 
       <div class="inv-totals">
+        <div class="inv-editable-note">
+          <div class="inv-section-label">Notes / Remarks</div>
+          <textarea id="invoiceNote" class="item-input" rows="2" placeholder="Click to add custom note or instruction here..." style="font-size: 12px; color: var(--gray-500); width: 100%; border-bottom: 1px dashed var(--gray-300);" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+        </div>
+
         <div class="inv-totals-table">
           <div class="totals-row"><span class="t-label">Subtotal</span><span class="t-val" id="prev-subtotal">Rp 0</span></div>
           <div class="totals-row"><span class="t-label">Tax</span><span class="t-val" id="prev-tax">Rp 0</span></div>
@@ -439,33 +447,43 @@
       </div>
 
       <div class="inv-footer">
-	          <div>
-          <div class="inv-footer-label">Payment Method</div>
-          <div class="inv-footer-text">
-            <strong>Bank Mandiri</strong><br>
-            Acc No: 1410024242810<br>
-            a.n Farhadian Rosandi Permana<br><br>
-            <strong>PayPal</strong><br>
-            farhadianrp@gmail.com
-          </div>
-        </div>
         <div>
-          <div class="inv-footer-label">Terms &amp; Conditions</div>
-          <ul class="inv-footer-text">
-            <li>Payment is due within 1 business day of invoice date.</li>
-            <li>Late payments may incur a 2% monthly fee.</li>
-            <li>All work remains property of Swandika Studio until payment is received in full.</li>
+          <div class="inv-section-label">Terms &amp; Conditions</div>
+          <ul class="inv-section-text">
+            <li>50% deposit required to start the project. Final files will be delivered upon full payment.</li>
+            <li>Projects below IDR 1,000,000 require full payment upfront.</li>
+            <li>Up to 3 minor revisions included. Additional revisions will be charged separately.</li>
+            <li>Changes outside the approved brief are subject to additional fees.</li>
+            <li>Delivery timelines may vary depending on revisions and client response times.</li>
+            <li>Deposits are non-refundable.</li>
+            <li>Kenne Design Studio reserves the right to display completed work in its portfolio.</li>
           </ul>
         </div>
-		        <div>
-          <div class="inv-footer-label">Thank You</div>
-          <div class="inv-footer-text">Thank you for trusting Swandika Studio with your project. It's been a pleasure working with you. We look forward to collaborating again soon.</div>
+        <div class="footer-right-col">
+          
+          <div>
+            <div class="inv-section-label">Payment Method</div>
+            <div class="inv-section-text">
+              <strong>Bank Mandiri</strong><br>
+              Acc No: 1410024242810<br>
+              a.n Farhadian Rosandi Permana<br><br>
+              <strong>PayPal</strong><br>
+              farhadianrp@gmail.com
+            </div>
+          </div>
+		  <div>
+            <div class="inv-section-label">Thank You</div>
+            <div class="inv-section-text">Thank you for trusting Swandika Studio with your project. It's been a pleasure working with you. We look forward to collaborating again soon.</div>
+          </div>
         </div>
       </div>
 
-    </div></main>
+    </div>
+  </main>
 
-</div><script>
+</div>
+
+<script>
   // ── STATE ──
   let items = [];
 
@@ -700,6 +718,8 @@
     document.getElementById('clientContact').value= '';
     document.getElementById('taxAmount').value    = '0';
     document.getElementById('discPercent').value  = '0';
+    document.getElementById('invoiceNote').value   = '';
+    document.getElementById('invoiceNote').style.height = 'auto';
     document.getElementById('prev-clientName').textContent   = '—';
     document.getElementById('prev-clientContact').textContent= '—';
     addItem(); calcTotals(); updatePreview();
