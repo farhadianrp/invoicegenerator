@@ -66,7 +66,13 @@
         h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.05; letter-spacing: -0.03em; }
         a { text-decoration: none; color: inherit; transition: all 0.3s ease; }
         ul { list-style: none; }
-        img { max-width: 100%; display: block; object-fit: cover; }
+        /* -webkit-user-drag menutup jalur "seret gambar ke tab baru"; touch-callout
+           menutup popup "Save Image" saat ditekan lama di iOS. Keduanya pelengkap
+           penghadang contextmenu di JS — lihat catatan di sana soal batasnya. */
+        img {
+            max-width: 100%; display: block; object-fit: cover;
+            -webkit-user-drag: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+        }
         input { font-family: inherit; }
 
         .container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
@@ -193,37 +199,80 @@
             color: var(--text-inverse); display: flex; align-items: stretch; overflow: hidden;
         }
         .hero-bg { position: absolute; inset: 0; z-index: 0; }
-        .hero-bg img { width: 100%; height: 100%; filter: grayscale(35%) contrast(1.1); }
+        /* object-fit: cover diwarisi dari aturan img global, jadi foto selalu memenuhi
+           bingkai tanpa bilah kosong. Subjek bercahaya berada di sekitar (50%, 46%)
+           kanvas foto (rasio 1.522); object-position dijaga di tengah horizontal dan
+           nilai vertikalnya disetel per breakpoint di blok responsive. */
+        .hero-bg img { width: 100%; height: 100%; object-position: 50% 50%; filter: grayscale(35%) contrast(1.1); }
+        /* Tiga lapis:
+           1. Vignette radial — transparan di tengah (area subjek), menggelap ke tepi.
+           2. Linear dari atas — menjaga kontras nav, pudar sebelum mencapai tengah.
+           3. Scrim bawah BERJANGKAR PIKSEL (to top, satuan px), bukan persen. Blok teks
+              ditambatkan ke dasar hero dengan padding tetap, jadi jaraknya ke dasar
+              nyaris konstan (~420px) di 1366x768, 1440x900, maupun 1920x1080 — padahal
+              posisi persentasenya berayun 43%–61%. Versi persen karena itu meleset:
+              di 1366x768 ramp-nya baru mulai tepat di bawah puncak headline sehingga
+              scrim = 0 dan kontrasnya jatuh ke 1.0:1. Satuan px membuat perlindungan
+              yang sama menempel pada teks di semua tinggi layar. */
         .hero-bg::after {
             content: ''; position: absolute; inset: 0;
-            background: linear-gradient(180deg, rgba(11,11,12,0.86) 0%, rgba(11,11,12,0.62) 45%, rgba(11,11,12,0.94) 100%);
+            background:
+                radial-gradient(ellipse 78% 70% at 50% 42%, rgba(11,11,12,0) 0%, rgba(11,11,12,0) 32%, rgba(11,11,12,0.5) 70%, rgba(11,11,12,0.94) 100%),
+                linear-gradient(180deg, rgba(11,11,12,0.5) 0%, rgba(11,11,12,0) 22%, rgba(11,11,12,0) 46%),
+                linear-gradient(to top, rgba(11,11,12,0.9) 0, rgba(11,11,12,0.7) 240px, rgba(11,11,12,0.52) 430px, rgba(11,11,12,0) 600px);
         }
+        /* Konten ditempelkan ke bawah (flex-end) lalu diberi jarak tetap dari dasar
+           hero. Cara ini lebih stabil daripada mengandalkan selisih padding atas-bawah:
+           posisinya tidak ikut bergeser saat tinggi layar berbeda. Padding atas hanya
+           batas aman supaya konten tak pernah menyelinap ke bawah header di layar pendek. */
         .hero-inner {
             position: relative; z-index: 2; width: 100%; max-width: var(--container); margin: 0 auto;
-            padding: 150px var(--gutter) 60px; display: flex; flex-direction: column; justify-content: center;
+            padding: 150px var(--gutter) 100px; display: flex; flex-direction: column;
+            justify-content: flex-end; align-items: center; text-align: center;
         }
 
-        .hero-main { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 56px; align-items: end; }
+        .hero-main { display: flex; flex-direction: column; align-items: center; gap: 26px; }
         /* Batas bawah 2.3rem: cukup besar agar jelas mendominasi subheadline (1.05rem),
            tapi masih menjaga "Makes Your Brand" muat 1 baris di layar 375px. */
         .hero-main h1 { font-size: clamp(2.3rem, 6vw, 4.9rem); }
-        .hero-side { padding-bottom: 8px; }
-        .hero-side p { color: rgba(255,255,255,0.78); font-size: 1.05rem; font-weight: var(--w-extralight); margin-bottom: 28px; max-width: 42ch; }
-        .hero-btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
+        .hero-side { display: flex; flex-direction: column; align-items: center; }
+        .hero-side p { color: rgba(255,255,255,0.78); font-size: 1.05rem; font-weight: var(--w-extralight); margin: 0 auto 32px; max-width: 46ch; }
+        .hero-btn-group { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+        /* Noda oranye lembut di dalam huruf yang mengikuti kursor selama berada di
+           atas headline. Dua lapis background di-clip ke teks: radial oranye di atas,
+           putih polos di bawah. Titik pusatnya (--mx/--my) diperbarui lewat JS.
+           @property mendaftarkan --glow-a sebagai angka supaya alpha-nya bisa
+           ditransisikan; di browser yang belum mendukung, glow-nya muncul seketika. */
+        @property --glow-a {
+            syntax: '<number>';
+            initial-value: 0;
+            inherits: false;
+        }
+        .hero-main h1 {
+            --glow-a: 0;
+            background-image:
+                radial-gradient(circle 260px at var(--mx, 50%) var(--my, 50%),
+                    rgba(255, 90, 31, var(--glow-a)) 0%, rgba(255, 90, 31, 0) 68%),
+                linear-gradient(#FFF, #FFF);
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; color: transparent;
+            transition: --glow-a 0.35s ease;
+        }
+        .hero-main h1:hover { --glow-a: 1; }
 
         /* =========================================
            MARQUEE CLIENTS
            ========================================= */
         .marquee-section { padding: 60px 0 56px; border-bottom: 1px solid var(--border-light); overflow: hidden; background: var(--bg-main); width: 100%; }
-        .marquee-label { text-align: center; font-size: 0.72rem; font-weight: var(--w-regular); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 26px; padding: 0 var(--gutter); }
         /* Jarak antar logo dibuat tetap (gap), bukan space-around yang lebarnya
            ikut berubah-ubah mengikuti layar sehingga terasa mepet di layar sempit.
-           6 salinan digeser -16.6667% (tepat 1 track) agar loop mulus di layar lebar. */
-        .marquee-container { display: flex; width: max-content; animation: scroll 34s linear infinite; }
-        .marquee-track { display: flex; align-items: center; gap: 90px; padding-right: 90px; }
-        .marquee-logo { height: 32px; opacity: 0.38; filter: grayscale(100%); transition: all 0.3s ease; flex-shrink: 0; }
+           Pergeserannya TIDAK memakai animasi CSS — lihat blok MARQUEE LOGOS di JS
+           untuk alasannya (hit-test hover & kemulusan loop). */
+        .marquee-container { display: flex; width: max-content; }
+        .marquee-track { display: flex; align-items: center; gap: 130px; padding-right: 130px; }
+        .marquee-logo { height: 32px; opacity: 0.38; filter: grayscale(100%); transition: opacity 0.25s ease, filter 0.25s ease; flex-shrink: 0; }
         .marquee-logo:hover { opacity: 1; filter: grayscale(0%); }
-        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-16.6667%); } }
 
         /* =========================================
            STATEMENT SECTION
@@ -269,14 +318,17 @@
 
         .service-row {
             display: block; padding: 26px 0; border-top: 1px solid var(--border-dark); cursor: pointer;
-            transition: padding-left 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.3s ease;
         }
         .service-row:last-child { border-bottom: 1px solid var(--border-dark); }
-        .service-row:hover, .service-row.is-active { padding-left: 16px; border-top-color: var(--accent); border-top-style: dashed; }
-        .service-row.is-active + .service-row { border-top-color: var(--accent); border-top-style: dashed; }
-        .service-row.is-active:last-child { border-bottom-color: var(--accent); border-bottom-style: dashed; }
-        .service-name { font-family: var(--font-display); font-size: clamp(1.7rem, 3.6vw, 2.9rem); font-weight: 600; letter-spacing: -0.03em; display: flex; align-items: flex-start; gap: 10px; transition: color 0.3s ease; }
-        .service-row.is-active .service-name { color: var(--accent); }
+        /* Hover hanya menyentuh teks nama layanan — garis pembatas antar baris
+           dibiarkan tetap agar daftarnya tidak ikut "berkedip" saat kursor lewat. */
+        .service-name {
+            font-family: var(--font-display); font-size: clamp(1.7rem, 3.6vw, 2.9rem); font-weight: 600;
+            letter-spacing: -0.03em; display: flex; align-items: flex-start; gap: 10px;
+            transition: color 0.3s ease, transform 0.45s cubic-bezier(0.16,1,0.3,1);
+        }
+        .service-row:hover .service-name,
+        .service-row.is-active .service-name { color: var(--accent); transform: translateX(14px); }
         .service-name sup { font-family: var(--font-body); font-size: 0.72rem; font-weight: var(--w-regular); color: var(--text-muted-dark); letter-spacing: 0; top: 0.2em; }
         /* Deskripsi tetap ada di HTML (dibaca JS + terindeks mesin pencari), tapi tidak dirender di daftar.
            Selektor anak langsung (>) — TANPA ini, aturan juga menyembunyikan <p> deskripsi
@@ -414,13 +466,15 @@
         .social-icon:hover { background: var(--text-inverse); color: var(--bg-dark); }
 
         /* Tanpa judul kolom — hanya daftar link polos, seperti referensi.
-           Font primer & ukuran disamakan dengan h3 "Stay updated with us" agar sama menonjol. */
+           Font sekunder dengan ukuran tetap 1.5rem. Bobot dipakai var(--w-light):
+           Geist hanya dimuat pada 200/300/400, jadi bobot tebal akan dipalsukan
+           browser. Tracking rapat khas font display juga dilepas. */
         .footer-col li { margin-bottom: 14px; }
         .footer-col a {
-            font-family: var(--font-display); font-size: 1.5rem; font-weight: 600;
-            letter-spacing: -0.03em; line-height: 1.15; display: inline-block;
+            font-family: var(--font-body); font-size: 1.5rem; font-weight: var(--w-light);
+            letter-spacing: normal; line-height: 1.3; color: var(--text-inverse); display: inline-block;
         }
-        .footer-col a:hover { color: var(--text-inverse); }
+        .footer-col a:hover { color: var(--accent); }
 
         /* Wordmark mengisi penuh lebar container tanpa JS sama sekali.
            Container query unit (cqw) menskala relatif terhadap lebar .wordmark-wrap,
@@ -484,12 +538,22 @@
             :root { --section-padding: 100px; --gutter: 32px; }
             .nav-links { display: none; }
             .menu-toggle { display: flex; }
-            .nav-pill { padding: 10px 10px 10px 22px; }
-
-            .hero-inner { padding-top: 130px; }
-            /* Tablet & mobile: kolom kanan turun ke bawah headline, tetap rata kiri */
-            .hero-main { grid-template-columns: 1fr; gap: 36px; align-items: start; }
-            .hero-side { padding-bottom: 0; }
+            /* Bar melebar penuh: latar blur menutupi seluruh lebar header, bukan pill.
+               Isinya memakai gutter yang sama dengan .container agar logo, menu, dan
+               tombol CTA lurus dengan konten di bawahnya. */
+            header { top: 0; }
+            header > .container { max-width: none; padding: 0; }
+            .nav-pill { max-width: none; border-radius: 0; border-width: 0 0 1px; padding: 12px var(--gutter); }
+            /* Tablet & mobile rata kiri sepenuhnya. <br> dilepas supaya headline
+               membungkus alami — jumlah barisnya dibiarkan mengikuti lebar layar,
+               tidak lagi dipaksa 2 baris seperti di desktop. */
+            .hero-inner { padding: 130px var(--gutter) 90px; align-items: flex-start; text-align: left; }
+            .hero-main { gap: 22px; align-items: flex-start; }
+            .hero-main h1 { font-size: clamp(2.5rem, 7.4vw, 4.5rem); line-height: 1.06; }
+            .hero-main h1 br { display: none; }
+            .hero-side { align-items: flex-start; }
+            .hero-side p { margin: 0 0 32px; }
+            .hero-btn-group { justify-content: flex-start; }
             .strip-row figure { width: 360px; height: 435px; }
 
             .section-head { grid-template-columns: 1fr; gap: 24px; align-items: start; margin-bottom: 52px; }
@@ -501,7 +565,11 @@
             .services-body { grid-template-columns: 1fr; gap: 0; }
             .service-preview { display: none; }
             .service-row { cursor: pointer; }
-            .service-row:hover, .service-row.is-active { padding-left: 0; }
+            /* Tanpa geseran horizontal di layar sempit — hanya warna teks yang berubah,
+               ditandai lewat .is-open karena dropdown dibuka dengan tap, bukan hover. */
+            .service-row:hover .service-name,
+            .service-row.is-active .service-name { transform: none; }
+            .service-row.is-open .service-name { color: var(--accent); }
             .service-drop { display: block; }
 
             .projects-grid { gap: 56px 32px; }
@@ -515,28 +583,27 @@
 
         @media (max-width: 768px) {
             :root { --section-padding: 80px; --gutter: 24px; }
-            header { top: 12px; }
 
             .hero { min-height: 92vh; }
-            .hero-inner { padding-top: 118px; padding-bottom: 36px; }
-            /* Headline dibuat dominan seperti referensi. <br> dimatikan agar teks
-               membungkus alami dan proporsinya seimbang di layar sempit. */
-            .hero-main h1 { font-size: clamp(2.5rem, 11.5vw, 3.4rem); line-height: 1.08; }
-            .hero-main h1 br { display: none; }
-            .hero-main { gap: 28px; }
+            .hero-inner { padding: 110px var(--gutter) 80px; }
+            /* Dibuat dominan: karena membungkus alami, ukurannya tidak lagi dibatasi
+               panjang baris terpanjang seperti waktu masih dipaksa 2 baris. */
+            .hero-main h1 { font-size: clamp(2.3rem, 10.5vw, 3.8rem); line-height: 1.08; }
+            .hero-main { gap: 20px; }
             .hero-side p { font-size: 1.02rem; margin-bottom: 30px; }
-            /* Tombol ditumpuk vertikal, lebar mengikuti isi — bukan direntang penuh */
+            /* Tombol ditumpuk vertikal rata kiri, lebar mengikuti isi */
             .hero-btn-group { flex-direction: column; align-items: flex-start; gap: 12px; }
 
             .marquee-section { padding: 44px 0 40px; }
-            .marquee-track { gap: 60px; padding-right: 60px; }
+            .marquee-track { gap: 90px; padding-right: 90px; }
             .marquee-logo { height: 26px; }
 
             .statement { padding-bottom: 72px; }
             /* Efek gliding dipertahankan di mobile */
             .strip-row figure { width: 310px; height: 375px; }
 
-            .stats-grid { grid-template-columns: 1fr; gap: 36px; }
+            /* Tetap 2 kolom seperti tablet — 4 angka jadi kisi 2x2, bukan satu lajur */
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 32px 20px; }
             .stat-desc { max-width: 100%; }
 
             .projects-grid { grid-template-columns: 1fr; gap: 56px; }
@@ -576,6 +643,56 @@
             #back-to-top { bottom: 22px; right: 22px; width: 46px; height: 46px; }
             #custom-cursor { display: none !important; }
             .hover-target { cursor: pointer !important; }
+        }
+
+        /* Sampai rasio ~1.67, subjek mendarat di ~46-50% tinggi hero — persis menempel
+           pada puncak headline yang mulai di ~47-52%; di 1440x900 jaraknya cuma 17px
+           dan baris pertama headline masih kejatuhan piksel putih (kontras 1.8:1).
+           Menaikkan scrim bisa menutupnya, tapi sekaligus meredupkan badan sosok yang
+           justru diminta tetap terang. Memendekkan foto memindahkan subjek ke ATAS
+           zona teks, jadi terang dan keterbacaan sama-sama dapat. */
+        @media (max-aspect-ratio: 5/3) {
+            .hero-bg { height: 85%; bottom: auto; }
+            .hero-bg::after {
+                background:
+                    radial-gradient(ellipse 88% 74% at 50% 42%, rgba(11,11,12,0) 0%, rgba(11,11,12,0) 32%, rgba(11,11,12,0.48) 70%, rgba(11,11,12,0.9) 100%),
+                    linear-gradient(180deg, rgba(11,11,12,0.5) 0%, rgba(11,11,12,0) 22%, rgba(11,11,12,0) 46%, rgba(11,11,12,0.6) 64%, rgba(11,11,12,1) 100%);
+            }
+        }
+
+        /* Dikunci pada RASIO, bukan lebar: pemicu masalahnya adalah bingkai yang jauh
+           lebih ramping daripada foto (1.522), bukan lebar layarnya. Pada rasio < 0.8
+           object-fit: cover memaksa zoom ekstrem — di 375x812 hanya ~33% lebar foto
+           yang terlihat, subjek membengkak jadi ~47% layar, dan sosok putih bercahaya
+           jatuh persis di belakang baris pertama headline yang juga putih. Memakai
+           max-width akan melewatkan kasus seperti 601x900 (rasio 0.67) yang sama
+           parahnya. Foto karena itu dibatasi ke bagian atas hero lalu dileburkan ke
+           latar gelap — subjek mengecil, lebih banyak bagian foto terlihat, dan zona
+           teks di bawahnya bersih. */
+        @media (max-aspect-ratio: 4/5) {
+            .hero-bg { height: 64%; bottom: auto; }
+            /* Ramp bawah berakhir pada rgba(11,11,12,1) — sama persis dengan
+               --bg-dark milik .hero — agar tepi bawah foto lebur tanpa garis sambung. */
+            .hero-bg::after {
+                background:
+                    radial-gradient(ellipse 98% 76% at 50% 40%, rgba(11,11,12,0) 0%, rgba(11,11,12,0) 34%, rgba(11,11,12,0.42) 70%, rgba(11,11,12,0.88) 100%),
+                    linear-gradient(180deg, rgba(11,11,12,0.55) 0%, rgba(11,11,12,0) 26%, rgba(11,11,12,0) 40%, rgba(11,11,12,0.55) 58%, rgba(11,11,12,1) 100%);
+            }
+        }
+
+        /* Ramping DAN pendek (mis. iPhone SE 375x667, atau 320x700): blok teks memakan
+           ~62% tinggi hero, jadi tidak tersisa ruang bersih untuk menaruh subjek di
+           atasnya — memendekkan foto pun percuma karena teksnya sudah mulai di ~25%
+           tinggi hero. Foto karena itu dikembalikan memenuhi hero tapi diredupkan jadi
+           tekstur latar. Pada opacity 0.42 di atas --bg-dark, sosok putih turun ke
+           sekitar #717172; terukur menghasilkan kontras 6.2:1 terhadap headline putih,
+           lolos ambang teks besar (3:1) maupun teks normal (4.5:1). */
+        @media (max-aspect-ratio: 4/5) and (max-height: 780px) {
+            .hero-bg { height: 100%; bottom: 0; }
+            .hero-bg img { opacity: 0.42; }
+            .hero-bg::after {
+                background: linear-gradient(180deg, rgba(11,11,12,0.6) 0%, rgba(11,11,12,0.12) 28%, rgba(11,11,12,0.45) 68%, rgba(11,11,12,0.86) 100%);
+            }
         }
 
         @media (max-width: 480px) {
@@ -630,11 +747,11 @@
         <!-- ============ HERO ============ -->
         <section id="home" class="hero">
             <div class="hero-bg">
-                <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=2000" alt="Swandika Studio at work">
+                <img src="https://github.com/farhadianrp/invoicegenerator/blob/main/hero-section-background.jpg?raw=true" alt="Swandika Studio at work">
             </div>
             <div class="hero-inner">
                 <div class="hero-main">
-                    <h1>Design that <br>Makes Your Brand <br>Stand Out</h1>
+                    <h1>Design that Makes <br>Your Brand Stand Out</h1>
                     <div class="hero-side">
                         <p>Branding, social media, and print design for businesses, startups, and personal brands that want to be taken seriously.</p>
                         <div class="hero-btn-group">
@@ -648,7 +765,6 @@
 
         <!-- ============ CLIENT LOGOS ============ -->
         <section class="marquee-section fade-in">
-            <div class="marquee-label">Trusted by businesses &amp; growing brands</div>
             <div class="marquee-container" id="marquee-container"></div>
         </section>
 
@@ -1010,6 +1126,25 @@
         function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
         requestAnimationFrame(raf);
 
+        /* Menyeret scrollbar bawaan membuat browser dan Lenis sama-sama menulis posisi
+           scroll di frame yang sama, sehingga halaman berkedip maju-mundur. Selama
+           seretan berlangsung, posisi internal Lenis dikunci mengikuti posisi asli
+           (lihat updateOnScroll) supaya tidak ada yang saling menarik.
+
+           Lenis sengaja TIDAK di-stop di sini: stop() memasang .lenis-stopped yang
+           membuat html overflow:hidden, sehingga scrollbar-nya justru lenyap.
+           clientWidth/clientHeight tidak menghitung lebar scrollbar, jadi koordinat
+           di luarnya pasti berada di atas scrollbar. */
+        let draggingScrollbar = false;
+        window.addEventListener('pointerdown', (e) => {
+            if (e.clientX > document.documentElement.clientWidth
+             || e.clientY > document.documentElement.clientHeight) draggingScrollbar = true;
+        });
+        function endScrollbarDrag() { draggingScrollbar = false; }
+        window.addEventListener('pointerup', endScrollbarDrag);
+        window.addEventListener('pointercancel', endScrollbarDrag);
+        window.addEventListener('blur', endScrollbarDrag);
+
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 const targetId = this.getAttribute('href');
@@ -1019,10 +1154,6 @@
 
         /* ===== BACK TO TOP ===== */
         const backToTopBtn = document.getElementById('back-to-top');
-        lenis.on('scroll', (e) => {
-            if (e.animatedScroll > 600) backToTopBtn.classList.add('visible');
-            else backToTopBtn.classList.remove('visible');
-        });
         backToTopBtn.addEventListener('click', () => lenis.scrollTo(0, { duration: 1.5 }));
 
         /* ===== HEADER & MOBILE MENU ===== */
@@ -1032,10 +1163,23 @@
         const mobileLinks = document.querySelectorAll('.mobile-link');
         let isMenuOpen = false;
 
-        lenis.on('scroll', (e) => {
-            if (e.animatedScroll > 50) header.classList.add('scrolled');
-            else header.classList.remove('scrolled');
-        });
+        /* Dibaca dari scroll asli, bukan event Lenis — saat scrollbar diseret Lenis
+           dijeda sehingga event-nya berhenti terkirim, sementara scroll native tetap
+           berjalan dan dipancarkan juga oleh Lenis di kondisi normal. */
+        function updateOnScroll() {
+            const y = window.scrollY;
+            header.classList.toggle('scrolled', y > 50);
+            backToTopBtn.classList.toggle('visible', y > 600);
+        }
+        /* Sinkronisasi hanya dipasang di listener native — kalau ditaruh di dalam
+           updateOnScroll, panggilan dari lenis.on('scroll') akan memicu scrollTo
+           yang memancarkan event lagi dan berputar tanpa henti. */
+        window.addEventListener('scroll', () => {
+            if (draggingScrollbar) lenis.scrollTo(window.scrollY, { immediate: true, force: true });
+            updateOnScroll();
+        }, { passive: true });
+        lenis.on('scroll', updateOnScroll);
+        updateOnScroll();
 
         function toggleMobileMenu() {
             isMenuOpen = !isMenuOpen;
@@ -1053,6 +1197,16 @@
                 if (isMenuOpen) toggleMobileMenu();
                 setTimeout(() => { if (targetId !== "#") lenis.scrollTo(targetId, { offset: -90, duration: 1.5 }); }, 100);
             });
+        });
+
+        /* ===== HERO HEADLINE GLOW =====
+           Memindahkan titik pusat noda oranye ke posisi kursor. Nilainya dalam px
+           relatif terhadap kotak headline; kemunculan & hilangnya diurus CSS :hover. */
+        const heroHeadline = document.querySelector('.hero-main h1');
+        heroHeadline.addEventListener('pointermove', (e) => {
+            const box = heroHeadline.getBoundingClientRect();
+            heroHeadline.style.setProperty('--mx', (e.clientX - box.left) + 'px');
+            heroHeadline.style.setProperty('--my', (e.clientY - box.top) + 'px');
         });
 
         /* ===== PROJECT DATA ===== */
@@ -1302,11 +1456,16 @@
         prevBtn.addEventListener('click', () => goToTesti(testiIndex - 1));
         nextBtn.addEventListener('click', () => goToTesti(testiIndex + 1));
 
-        /* Geser manual (swipe) juga harus memperbarui dot & status tombol */
-        let testiScrollTimer;
+        /* Geser manual (swipe) memperbarui dot & status tombol secara langsung.
+           Sebelumnya dijeda 90ms setelah gerakan berhenti, sehingga dot baru
+           berpindah setelah jari dilepas. Sekarang dihitung tiap frame mengikuti
+           posisi geseran; rAF dipakai agar tidak menghitung berkali-kali dalam
+           satu frame saat event scroll datang beruntun. */
+        let testiRaf = null;
         testiTrack.addEventListener('scroll', () => {
-            clearTimeout(testiScrollTimer);
-            testiScrollTimer = setTimeout(() => {
+            if (testiRaf !== null) return;
+            testiRaf = requestAnimationFrame(() => {
+                testiRaf = null;
                 const mid = testiTrack.scrollLeft + testiTrack.clientWidth / 2;
                 let nearest = 0, best = Infinity;
                 testiCards.forEach((card, i) => {
@@ -1315,8 +1474,8 @@
                     if (d < best) { best = d; nearest = i; }
                 });
                 syncTesti(nearest);
-            }, 90);
-        });
+            });
+        }, { passive: true });
         syncTesti(0);
 
         /* ===== MODAL ===== */
@@ -1372,17 +1531,72 @@
             "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
             "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg"
         ];
-        function createTrack() {
+        function createTrack(hidden) {
             const track = document.createElement('div');
             track.className = 'marquee-track';
+            if (hidden) track.setAttribute('aria-hidden', 'true');
             dummyLogos.forEach(src => {
                 const img = document.createElement('img');
-                img.src = src; img.className = 'marquee-logo'; img.alt = 'Client logo';
+                img.src = src; img.className = 'marquee-logo';
+                img.alt = hidden ? '' : 'Client logo';
                 track.appendChild(img);
             });
             return track;
         }
-        for (let i = 0; i < 6; i++) marqueeContainer.appendChild(createTrack());
+
+        /* Digerakkan lewat requestAnimationFrame, bukan animasi CSS. Dua sebabnya:
+
+           1. Animasi transform CSS dijalankan di compositor, sementara hit-test hover
+              memakai posisi versi main thread yang tidak ikut diperbarui tiap frame.
+              Akibatnya kursor sering "meleset" dari logo dan hover-nya tidak jalan.
+              Dengan transform ditulis dari main thread tiap frame, keduanya sinkron.
+
+           2. Pergeseran dihitung dalam piksel lalu di-modulo lebar satu track, jadi
+              tiap putaran mendarat persis di posisi awal. Versi lama memakai persen
+              terhadap lebar container, yang pembulatannya menyisakan lompatan kecil. */
+        const MARQUEE_SPEED = 55; // piksel per detik
+        let marqueeTrackWidth = 0, marqueeOffset = 0, marqueeLastTime = null;
+
+        /* Jumlah salinan disesuaikan lebar layar: sisa track di kanan harus selalu
+           cukup menutupi viewport saat pergeseran mendekati satu lebar track. */
+        function buildMarquee() {
+            const probe = marqueeContainer.querySelector('.marquee-track');
+            marqueeTrackWidth = probe ? probe.getBoundingClientRect().width : 0;
+            if (!marqueeTrackWidth) return;
+            /* Tab yang dibuka di latar belakang melaporkan lebar 0 sampai ditampilkan.
+               screen.width dipakai sebagai perkiraan aman supaya salinannya tidak
+               kurang dan strip tidak menyisakan ruang kosong saat tab dibuka nanti. */
+            const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0,
+                                (window.screen && screen.width) || 0, 360);
+            const needed = Math.ceil(vw / marqueeTrackWidth) + 2;
+            let have = marqueeContainer.children.length;
+            while (have < needed) { marqueeContainer.appendChild(createTrack(true)); have++; }
+        }
+
+        function tickMarquee(now) {
+            if (marqueeLastTime === null) marqueeLastTime = now;
+            const dt = Math.min((now - marqueeLastTime) / 1000, 0.05); // redam lonjakan saat tab kembali aktif
+            marqueeLastTime = now;
+            if (marqueeTrackWidth > 0) {
+                marqueeOffset = (marqueeOffset + MARQUEE_SPEED * dt) % marqueeTrackWidth;
+                marqueeContainer.style.transform = `translateX(${-marqueeOffset}px)`;
+            }
+            requestAnimationFrame(tickMarquee);
+        }
+
+        marqueeContainer.appendChild(createTrack(false));
+        buildMarquee();
+        /* Lebar track baru pasti setelah logo termuat, jadi diukur ulang. */
+        window.addEventListener('load', buildMarquee);
+        window.addEventListener('resize', buildMarquee);
+        /* rAF berhenti selama tab tersembunyi; saat kembali tampil lebar sebenarnya
+           baru diketahui dan patokan waktu perlu disetel ulang. */
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible') return;
+            marqueeLastTime = null;
+            buildMarquee();
+        });
+        requestAnimationFrame(tickMarquee);
 
         /* ===== FADE IN ON SCROLL ===== */
         const fadeObserver = new IntersectionObserver((entries) => {
@@ -1437,6 +1651,28 @@
             const original = btn.textContent;
             btn.textContent = 'Not connected yet';
             setTimeout(() => { btn.textContent = original; }, 2200);
+        });
+
+        /* ===== PENGHADANG KLIK KANAN PADA GAMBAR =====
+           CATATAN JUJUR: ini hanya menghilangkan MENU-nya, bukan melindungi berkasnya.
+           URL gambar tetap terbaca lewat View Source, DevTools, tab Network, atau
+           dengan mematikan JavaScript — file-nya memang harus diunduh browser agar
+           bisa tampil. Anggap ini penghalang untuk pengunjung awam saja; kalau tujuannya
+           benar-benar melindungi karya, pakai watermark atau unggah versi resolusi rendah.
+
+           Pendengar dipasang di document (event delegation), bukan di tiap <img>, karena
+           sebagian besar gambar di halaman ini dibuat belakangan oleh JS — kartu proyek,
+           logo marquee, kloning image strip, preview layanan, dan galeri modal. Dengan
+           delegasi, gambar yang muncul kemudian ikut tercakup tanpa perlu dipasangi ulang.
+
+           Sengaja DIBATASI pada <img> saja: memblokir contextmenu seluruh halaman akan
+           ikut mematikan salin teks, cek ejaan, dan "buka tautan di tab baru". */
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.tagName === 'IMG') e.preventDefault();
+        });
+        /* Firefox tidak mengenal -webkit-user-drag, jadi seretannya dicegat di sini. */
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.tagName === 'IMG') e.preventDefault();
         });
     </script>
 </body>
